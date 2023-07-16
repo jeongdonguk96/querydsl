@@ -3,8 +3,13 @@ package com.io.querydsl;
 import com.io.querydsl.domain.Member;
 import com.io.querydsl.domain.QMember;
 import com.io.querydsl.domain.Team;
+import com.io.querydsl.dto.MemberDto;
+import com.io.querydsl.dto.QMemberDto;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +22,7 @@ import java.util.List;
 
 import static com.io.querydsl.domain.QMember.member;
 import static com.io.querydsl.domain.QTeam.team;
+import static com.querydsl.jpa.JPAExpressions.select;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
@@ -40,17 +46,17 @@ class QuerydslBasicTests {
 		Member memberB = new Member(2L, "memberB", 20, teamA);
 		Member memberC = new Member(3L, "memberC", 30, teamB);
 		Member memberD = new Member(4L, "memberD", 40, teamB);
-		Member memberE = new Member(5L, null, 100);
-		Member memberF = new Member(6L, "memberF", 100);
-		Member memberG = new Member(7L, "memberG", 100);
+//		Member memberE = new Member(5L, null, 100);
+//		Member memberF = new Member(6L, "memberF", 100);
+//		Member memberG = new Member(7L, "memberG", 100);
 
 		em.persist(memberA);
 		em.persist(memberB);
 		em.persist(memberC);
 		em.persist(memberD);
-		em.persist(memberE);
-		em.persist(memberF);
-		em.persist(memberG);
+//		em.persist(memberE);
+//		em.persist(memberF);
+//		em.persist(memberG);
 
 		em.flush();
 		em.clear();
@@ -323,7 +329,7 @@ class QuerydslBasicTests {
 	}
 
 	@Test
-	void fetchJoi2() {
+	void fetchJoin2() {
 		em.flush();
 		em.clear();
 
@@ -337,5 +343,195 @@ class QuerydslBasicTests {
 		System.out.println("findMember = " + findMember);
 
 		assertThat(findMember.getTeam().getName()).isEqualTo("teamA");
+	}
+
+	// 나이가 가장 많은 회원 조회
+	@Test
+	void subQuery() {
+		QMember subMember = new QMember("subMember");
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				.where(member.age.eq(
+						select(subMember.age.max())
+								.from(subMember)
+				))
+				.fetch();
+
+		assertThat(result)
+				.extracting("age")
+				.containsExactly(40);
+	}
+
+	// 나이가 평균 이상인 회원 조회
+	@Test
+	void subQuery2() {
+		QMember subMember = new QMember("subMember");
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				.where(member.age.goe(
+						select(subMember.age.avg())
+								.from(subMember)
+				))
+				.fetch();
+
+		assertThat(result)
+				.extracting("age")
+				.containsExactly(30, 40);
+	}
+
+	// 나이가 10살 이상인 회원 조회
+	@Test
+	void subQuery3() {
+		QMember subMember = new QMember("subMember");
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				.where(member.age.in(
+						select(subMember.age)
+								.from(subMember)
+								.where(member.age.gt(10))
+				))
+				.fetch();
+
+		assertThat(result)
+				.extracting("age")
+				.containsExactly(20, 30, 40);
+	}
+
+	@Test
+	void subQuery4() {
+		QMember subMember = new QMember("subMember");
+
+		List<Tuple> result = queryFactory
+				.select(member.username,
+						select(subMember.age.avg())
+								.from(subMember))
+				.from(member)
+				.fetch();
+
+
+	}
+
+	@Test
+	void basicCase() {
+		List<Tuple> result = queryFactory
+				.select(member.username, member.age
+						.when(10).then("열살")
+						.when(20).then("스무살")
+						.when(30).then("서른살")
+						.otherwise("기타")
+				)
+				.from(member)
+				.fetch();
+	}
+
+	@Test
+	void complexCase() {
+		List<Tuple> result = queryFactory
+				.select(member.username, new CaseBuilder()
+						.when(member.age.between(0, 19)).then("미성년자")
+						.when(member.age.between(20, 29)).then("청년")
+						.when(member.age.between(30, 39)).then("삼촌")
+						.otherwise("아저씨")
+				)
+				.from(member)
+				.fetch();
+
+		System.out.println("result = " + result);
+	}
+
+	@Test
+	void constant() {
+		List<Tuple> result = queryFactory
+				.select(member.username, Expressions.constant("남성"))
+				.from(member)
+				.fetch();
+
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+	}
+
+	@Test
+	void concat() {
+		List<String> result = queryFactory
+				.select(member.username.concat(" : ").concat(member.team.name))
+				.from(member)
+				.fetch();
+
+		for (String s : result) {
+			System.out.println("s = " + s);
+		}
+	}
+
+	// username이라는 하나의 문자열 컬럼만 반환
+	@Test
+	void StringProjection() {
+		List<String> result = queryFactory
+				.select(member.username)
+				.from(member)
+				.fetch();
+	}
+
+	// username과 age라는 두 컬럼 Tuple로 반환
+	@Test
+	void tupleProjection() {
+		List<Tuple> result = queryFactory
+				.select(member.username, member.age)
+				.from(member)
+				.fetch();
+	}
+
+	// 세터 방식 dto 반환
+	@Test
+	void dtoBySetter() {
+		List<MemberDto> result = queryFactory
+				.select(Projections.bean(MemberDto.class,
+						member.username,
+						member.age))
+				.from(member)
+				.fetch();
+
+		for (MemberDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
+		}
+	}
+
+	// 필드 주입 방식 dto 반환
+	@Test
+	void dtoByField() {
+		List<MemberDto> result = queryFactory
+				.select(Projections.fields(MemberDto.class,
+						member.username,
+						member.age))
+				.from(member)
+				.fetch();
+
+		for (MemberDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
+		}
+	}
+
+	// 생성자 방식 dto 반환
+	@Test
+	void dtoByConstructor() {
+		List<MemberDto> result = queryFactory
+				.select(Projections.constructor(MemberDto.class,
+						member.username,
+						member.age))
+				.from(member)
+				.fetch();
+
+		for (MemberDto memberDto : result) {
+			System.out.println("memberDto = " + memberDto);
+		}
+	}
+
+	// @QueryProjection 어노테이션 Dto 반환
+	@Test
+	void dtoByQueryProjection() {
+		List<MemberDto> result = queryFactory
+				.select(new QMemberDto(member.username, member.age))
+				.from(member)
+				.fetch();
 	}
 }
