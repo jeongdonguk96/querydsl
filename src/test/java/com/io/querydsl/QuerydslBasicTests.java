@@ -5,9 +5,12 @@ import com.io.querydsl.domain.QMember;
 import com.io.querydsl.domain.Team;
 import com.io.querydsl.dto.MemberDto;
 import com.io.querydsl.dto.QMemberDto;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -533,5 +536,77 @@ class QuerydslBasicTests {
 				.select(new QMemberDto(member.username, member.age))
 				.from(member)
 				.fetch();
+	}
+
+	// BooleanBuilder를 사용한 동적 쿼리
+	@Test
+	void dynamicQuery_BooleanBuilder() {
+		String usernameParam = "memberA";
+		Integer ageParam = null;
+
+		List<Member> members = searchMember1(usernameParam, ageParam);
+		assertThat(members.size()).isEqualTo(1);
+	}
+
+	private List<Member> searchMember1(String usernameParam, Integer ageParam) {
+
+		// BooleanBuilder 객체를 생성한다.
+		BooleanBuilder builder = new BooleanBuilder();
+//		BooleanBuilder builder = new BooleanBuilder(member.username.eq(usernameParam));
+
+		// 파라미터 값 여부를 검사한다.
+		if (usernameParam != null) {
+			builder.and(member.username.eq(usernameParam));
+		}
+
+		if (ageParam != null) {
+			builder.and(member.age.eq(ageParam));
+		}
+
+		return queryFactory
+				.selectFrom(member)
+				.where(builder)
+				.fetch();
+	}
+
+	// 다중 WHERE 파라미터 사용
+	@Test
+	void dynamicQuery_WHEREParam() {
+		String usernameParam = "memberA";
+		Integer ageParam = 10;
+
+		List<Member> members = searchMember2(usernameParam, ageParam);
+		assertThat(members.size()).isEqualTo(1);
+	}
+
+	private List<Member> searchMember2(String usernameParam, Integer ageParam) {
+		return queryFactory
+				.selectFrom(member)
+				.where(usernameEq(usernameParam), ageEq(ageParam))
+				.fetch();
+	}
+
+	private BooleanExpression usernameEq(String usernameParam) {
+		return usernameParam != null ? member.username.eq(usernameParam) : null;
+	}
+
+	private BooleanExpression ageEq(Integer ageParam) {
+		return ageParam != null ? member.age.eq(ageParam) : null;
+	}
+
+	private BooleanExpression allEq(String usernameParam, Integer ageParam) {
+		return usernameEq(usernameParam).and(ageEq(ageParam));
+	}
+
+	// 벌크 연산
+	@Test
+	void bulkUpdate() {
+		long count = queryFactory
+				.update(member)
+				.set(member.username, "비회원")
+				.where(member.age.lt(21))
+				.execute();
+
+		assertThat(count).isEqualTo(2);
 	}
 }
