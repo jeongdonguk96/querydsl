@@ -1,4 +1,4 @@
-package com.io.querydsl.domain;
+package com.io.querydsl.persistence;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,13 +13,17 @@ import java.util.List;
 @NoArgsConstructor
 public class Team {
 
-    @Id
+    @Id @GeneratedValue
     @Column(name = "team_id")
     private Long id;
     private String name;
 
     @OneToMany(mappedBy = "team")
     private List<Member> members = new ArrayList<>();
+
+    public Team(String name) {
+        this.name = name;
+    }
 
     public Team(Long id, String name) {
         this.id = id;

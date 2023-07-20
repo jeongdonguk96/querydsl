@@ -1,4 +1,4 @@
-package com.io.querydsl.domain;
+package com.io.querydsl.persistence;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

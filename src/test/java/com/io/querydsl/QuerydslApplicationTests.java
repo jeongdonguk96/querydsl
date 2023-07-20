@@ -1,7 +1,7 @@
 package com.io.querydsl;
 
-import com.io.querydsl.domain.Hello;
-import com.io.querydsl.domain.QHello;
+import com.io.querydsl.persistence.Hello;
+import com.io.querydsl.persistence.QHello;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;

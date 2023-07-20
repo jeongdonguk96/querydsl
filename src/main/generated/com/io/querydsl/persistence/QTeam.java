@@ -1,4 +1,4 @@
-package com.io.querydsl.domain;
+package com.io.querydsl.persistence;
 
 import static com.querydsl.core.types.PathMetadataFactory.*;
 
@@ -16,7 +16,7 @@ import com.querydsl.core.types.dsl.PathInits;
 @Generated("com.querydsl.codegen.DefaultEntitySerializer")
 public class QTeam extends EntityPathBase<Team> {
 
-    private static final long serialVersionUID = 2008030025L;
+    private static final long serialVersionUID = 929181642L;
 
     public static final QTeam team = new QTeam("team");
 

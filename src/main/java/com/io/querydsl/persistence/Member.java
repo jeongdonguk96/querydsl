@@ -1,4 +1,4 @@
-package com.io.querydsl.domain;
+package com.io.querydsl.persistence;
 
 import jakarta.persistence.*;
 import lombok.Getter;
