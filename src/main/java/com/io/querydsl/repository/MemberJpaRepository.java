@@ -19,11 +19,9 @@ import static org.springframework.util.StringUtils.hasText;
 @Repository
 public class MemberJpaRepository {
 
-    private final EntityManager em;
     private final JPAQueryFactory queryFactory;
 
     public MemberJpaRepository(EntityManager em) {
-        this.em = em;
         this.queryFactory = new JPAQueryFactory(em);
     }
 

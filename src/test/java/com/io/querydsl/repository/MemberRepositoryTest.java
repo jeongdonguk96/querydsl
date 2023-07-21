@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -60,6 +62,34 @@ class MemberRepositoryTest {
         List<MemberTeamDto> result = memberRepository.searchMember(condition);
 
         assertThat(result).extracting("username").containsExactly("memberD");
+    }
+
+    // 단순 페이징
+    @Test
+    void searchPagingSimpleTest() {
+        MemberSearchCondition condition = new MemberSearchCondition();
+        PageRequest pageRequest = PageRequest.of(0, 3);
+
+        Page<MemberTeamDto> result = memberRepository.searchMemberPagingSimple(condition, pageRequest);
+
+        assertThat(result.getSize()).isEqualTo(3);
+        assertThat(result.getContent())
+                .extracting("username")
+                .containsExactly("memberA", "memberB", "memberC");
+    }
+
+    // 복잡 페이징
+    @Test
+    void searchPagingComplexTest() {
+        MemberSearchCondition condition = new MemberSearchCondition();
+        PageRequest pageRequest = PageRequest.of(0, 3);
+
+        Page<MemberTeamDto> result = memberRepository.searchMemberPagingComplex(condition, pageRequest);
+
+        assertThat(result.getSize()).isEqualTo(3);
+        assertThat(result.getContent())
+                .extracting("username")
+                .containsExactly("memberA", "memberB", "memberC");
     }
 
 }
